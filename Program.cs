@@ -11,13 +11,15 @@ namespace rot13
         private const int maxAlpha = '~';
         // how much to 'rotate' each character
         private const int shiftAmount = 29;
-        private const string defaultOutputName = "rotted.txt";
+        private static bool encode;
         
         static void Main(string[] args)
         {
 
             while (true)
             {
+                Console.WriteLine("(D)ecode or (E)ncode: ");
+                encode = Console.ReadLine() == "E" ? true : false ;
                 Console.WriteLine("(F)ile or (C)li input:");
                 switch(Console.ReadLine())
                 {
@@ -39,18 +41,18 @@ namespace rot13
             try 
             {
                 Console.WriteLine("Enter Filename to rot13:");
-                using (var fs = new StreamReader( Console.ReadLine() ))
+                var fileName = Console.ReadLine();
+                using (var fs = new StreamReader( fileName ))
                 {
-                    Console.WriteLine($"Output to file (leave empty for '{defaultOutputName}'): ");
+                    Console.WriteLine($"Output to file (leave empty for 'rot{fileName}'): ");
                     var outputName = Console.ReadLine();
-                    outputName = outputName == "" ? defaultOutputName : outputName;
+                    outputName = outputName == "" ? fileName + ".rot" : outputName ; 
                     var destFile = new StreamWriter( File.Create( outputName ) );
 
                     string line;
                     while ( (line = fs.ReadLine()) != null )
                     {
-                        var rottedLine = rotN(line);
-                        destFile.WriteLine( rottedLine );
+                        destFile.WriteLine( rotN(line) );
                     }
                     destFile.Flush();
                     destFile.Close();
@@ -68,7 +70,6 @@ namespace rot13
         {
             Console.Write($"Message to rot{shiftAmount}: ");
             Console.WriteLine(rotN(Console.ReadLine()));
-            return;
         }
 
 
@@ -79,10 +80,25 @@ namespace rot13
             {
                 if (minAlpha <= word[i] && word[i] <= maxAlpha)
                 {
-                    var newVal = (word[i] + shiftAmount) % (maxAlpha + 1);
+
+                    // [10-20], shift 6
+                    // 10 + 6 = 16
+                    // 16 - 6 = 10
+                    // (19 + 6) % 21 = 4 = 20, 10, 11, 12, 13, 14
+                    // 14 - 6 = 8 = 20, 19
+
+                    int newVal;
+                    if (encode)
+                    {
+                        newVal = (word[i] + shiftAmount) % (maxAlpha + 1);
+                    }
+                    else{
+                        newVal = (word[i] - shiftAmount) % (maxAlpha + 1);
+                    }
+
                     if (newVal < minAlpha)
                     {
-                        newVal += minAlpha;
+                        newVal = encode ? newVal + minAlpha: (maxAlpha + 1) - (minAlpha - newVal);
                     }
                     sb[i] = (char) newVal;
 
